@@ -1,13 +1,8 @@
-import os
-import sys
-os.system(f"{sys.executable} -m pip install plotly")
-
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 st.set_page_config(
     page_title="Customer Churn Analysis | Data Analyst Portfolio",
@@ -18,274 +13,127 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #1E3A5F;
-        text-align: center;
-        margin-bottom: 0.5rem;
-    }
-    .sub-header {
-        font-size: 1.1rem;
-        color: #666;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-    }
-    .insight-box {
-        background-color: #f0f7ff;
-        border-left: 4px solid #1E3A5F;
-        padding: 1rem;
-        margin: 1rem 0;
-        border-radius: 0 8px 8px 0;
-    }
-    .recommendation-box {
-        background-color: #f0fff4;
-        border-left: 4px solid #38a169;
-        padding: 1rem;
-        margin: 1rem 0;
-        border-radius: 0 8px 8px 0;
-    }
-    .sql-box {
-        background-color: #1a1a2e;
-        color: #00d4ff;
-        padding: 1rem;
-        border-radius: 8px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.85rem;
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #f0f2f6;
-        border-radius: 8px 8px 0 0;
-        padding: 10px 20px;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #1E3A5F;
-        color: white;
-    }
+.main-header{font-size:2.5rem;font-weight:700;color:#1E3A5F;text-align:center}
+.sub-header{font-size:1.1rem;color:#666;text-align:center;margin-bottom:2rem}
+.section-header{font-size:1.5rem;font-weight:600;color:#1E3A5F;border-bottom:2px solid #e0e0e0}
+.insight-box{background:#f0f7ff;border-left:4px solid #1E3A5F;padding:1rem}
+.warning-box{background:#fff5f5;border-left:4px solid #E94F37;padding:1rem}
+.success-box{background:#f0fff4;border-left:4px solid #38a169;padding:1rem}
 </style>
 """, unsafe_allow_html=True)
 
 @st.cache_data
 def generate_data():
     np.random.seed(42)
-    n_customers = 7043
-    customer_ids = [f'CUST{str(i).zfill(6)}' for i in range(1, n_customers + 1)]
-    contract_types = np.random.choice(
-        ['Month-to-Month', 'One Year', 'Two Year'],
-        size=n_customers,
-        p=[0.55, 0.25, 0.20]
-    )
-    payment_methods = np.random.choice(
-        ['Electronic Check', 'Mailed Check', 'Bank Transfer', 'Credit Card'],
-        size=n_customers,
-        p=[0.35, 0.20, 0.22, 0.23]
-    )
-    internet_service = np.random.choice(
-        ['Fiber Optic', 'DSL', 'No Internet'],
-        size=n_customers,
-        p=[0.45, 0.35, 0.20]
-    )
-    tenure = []
-    for contract in contract_types:
-        if contract == 'Month-to-Month':
-            tenure.append(max(1, int(np.random.exponential(15))))
-        elif contract == 'One Year':
-            tenure.append(max(12, int(np.random.normal(36, 15))))
-        else:
-            tenure.append(max(24, int(np.random.normal(50, 12))))
-    tenure = np.clip(tenure, 1, 72)
-    monthly_charges = []
-    for internet in internet_service:
-        if internet == 'Fiber Optic':
-            monthly_charges.append(np.random.normal(85, 15))
-        elif internet == 'DSL':
-            monthly_charges.append(np.random.normal(55, 12))
-        else:
-            monthly_charges.append(np.random.normal(30, 8))
-    monthly_charges = np.clip(monthly_charges, 18, 120)
-    total_charges = np.array(tenure) * np.array(monthly_charges) * np.random.uniform(0.9, 1.1, n_customers)
-    churn = []
-    for i in range(n_customers):
-        base_prob = 0.15
-        if contract_types[i] == 'Month-to-Month':
-            base_prob += 0.35
-        elif contract_types[i] == 'One Year':
-            base_prob += 0.10
-        if payment_methods[i] == 'Electronic Check':
-            base_prob += 0.15
-        elif payment_methods[i] == 'Mailed Check':
-            base_prob += 0.05
-        if tenure[i] <= 6:
-            base_prob += 0.20
-        elif tenure[i] <= 12:
-            base_prob += 0.10
-        elif tenure[i] > 48:
-            base_prob -= 0.15
-        if monthly_charges[i] > 80:
-            base_prob += 0.08
-        churn.append('Yes' if np.random.random() < min(base_prob, 0.85) else 'No')
+    n = 7043
+
     df = pd.DataFrame({
-        'CustomerID': customer_ids,
-        'Tenure': tenure,
-        'MonthlyCharges': np.round(monthly_charges, 2),
-        'TotalCharges': np.round(total_charges, 2),
-        'ContractType': contract_types,
-        'PaymentMethod': payment_methods,
-        'InternetService': internet_service,
-        'Churn': churn
+        "CustomerID": [f"CUST{str(i).zfill(6)}" for i in range(1, n+1)],
+        "Gender": np.random.choice(["Male", "Female"], n),
+        "SeniorCitizen": np.random.choice([0,1], n, p=[0.84,0.16]),
+        "ContractType": np.random.choice(["Month-to-Month","One Year","Two Year"], n, p=[0.55,0.25,0.20]),
+        "PaymentMethod": np.random.choice(["Electronic Check","Mailed Check","Bank Transfer","Credit Card"], n),
+        "InternetService": np.random.choice(["Fiber Optic","DSL","No Internet"], n),
+        "Tenure": np.clip(np.random.exponential(24, n).astype(int), 1, 72),
+        "MonthlyCharges": np.round(np.clip(np.random.normal(70, 20, n), 18, 120), 2)
     })
+
+    df["TotalCharges"] = np.round(df["Tenure"] * df["MonthlyCharges"], 2)
+    churn_prob = (
+        (df["ContractType"] == "Month-to-Month") * 0.35 +
+        (df["PaymentMethod"] == "Electronic Check") * 0.15 +
+        (df["Tenure"] <= 6) * 0.20 +
+        (df["MonthlyCharges"] > 80) * 0.08 + 0.15
+    )
+    df["Churn"] = np.where(np.random.rand(n) < churn_prob.clip(0,0.85), "Yes", "No")
     return df
 
 df = generate_data()
 
 total_customers = len(df)
-churned_customers = len(df[df['Churn'] == 'Yes'])
-churn_rate = (churned_customers / total_customers) * 100
-monthly_revenue = df['MonthlyCharges'].sum()
-revenue_at_risk = df[df['Churn'] == 'Yes']['MonthlyCharges'].sum() * 12
-avg_tenure = df['Tenure'].mean()
+churned_customers = (df["Churn"]=="Yes").sum()
+churn_rate = churned_customers / total_customers * 100
+retention_rate = 100 - churn_rate
+revenue_at_risk = df.loc[df["Churn"]=="Yes","MonthlyCharges"].sum() * 12
+avg_tenure = df["Tenure"].mean()
+
+df["TenureGroup"] = pd.cut(df["Tenure"], [0,6,12,24,48,72],
+    labels=["0-6","7-12","13-24","25-48","49-72"])
 
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/combo-chart.png", width=80)
-    st.title("Navigation")
     page = st.radio(
-        "Select Page",
-        ["📊 Executive Dashboard", "🔍 Detailed Analysis", "💻 SQL Queries", 
-         "💡 Insights & Recommendations", "📋 About This Project"],
-        label_visibility="collapsed"
+        "Navigation",
+        ["🏠 Executive Dashboard","🔍 Detailed Analysis","💻 SQL Queries",
+         "💡 Insights & Recommendations","📋 About This Project"]
     )
-    st.markdown("---")
-    st.markdown("### 📁 Project Info")
-    st.markdown("""
-    **Dataset:** Telecom Customers  
-    **Records:** 7,043 customers  
-    **Analysis Type:** Churn Analysis  
-    **Tools:** Python, SQL, Streamlit
-    """)
-    st.markdown("---")
-    st.markdown("### 🔗 Connect")
-    st.markdown("""
-    [GitHub](https://github.com) | [LinkedIn](https://linkedin.com)
-    """)
+    st.metric("Customers", f"{total_customers:,}")
+    st.metric("Churn Rate", f"{churn_rate:.1f}%")
+    st.metric("Revenue at Risk", f"${revenue_at_risk/1e6:.2f}M")
 
-if page == "📊 Executive Dashboard":
-    st.markdown('<p class="main-header">📊 Customer Churn Analysis Dashboard</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Telecom Business Intelligence | Real-time Customer Retention Insights</p>', unsafe_allow_html=True)
-    
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    with col1:
-        st.metric(
-            label="Total Customers",
-            value=f"{total_customers:,}",
-            delta="Active base"
-        )
-    
-    with col2:
-        st.metric(
-            label="Churn Rate",
-            value=f"{churn_rate:.1f}%",
-            delta=f"-{churned_customers:,} customers",
-            delta_color="inverse"
-        )
-    
-    with col3:
-        st.metric(
-            label="Revenue at Risk",
-            value=f"${revenue_at_risk/1e6:.2f}M",
-            delta="Annual",
-            delta_color="inverse"
-        )
-    
-    with col4:
-        st.metric(
-            label="Avg Monthly Revenue",
-            value=f"${df['MonthlyCharges'].mean():.2f}",
-            delta="Per customer"
-        )
-    
-    with col5:
-        st.metric(
-            label="Avg Tenure",
-            value=f"{avg_tenure:.1f} months",
-            delta="Customer lifetime"
-        )
-    
-    st.markdown("---")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Overall Churn Distribution")
-        churn_counts = df['Churn'].value_counts()
+if page == "🏠 Executive Dashboard":
+    st.markdown("<p class='main-header'>Customer Churn Dashboard</p>", unsafe_allow_html=True)
+
+    c1,c2,c3,c4 = st.columns(4)
+    c1.metric("Customers", total_customers)
+    c2.metric("Churned", churned_customers)
+    c3.metric("Retention Rate", f"{retention_rate:.1f}%")
+    c4.metric("Avg Tenure", f"{avg_tenure:.1f} mo")
+
+    c1,c2 = st.columns(2)
+
+    with c1:
         fig = px.pie(
-            values=churn_counts.values,
-            names=['Retained', 'Churned'],
-            color_discrete_sequence=['#2E86AB', '#E94F37'],
-            hole=0.4
+            values=[total_customers-churned_customers, churned_customers],
+            names=["Retained","Churned"], hole=0.5
         )
-        fig.update_layout(
-            font=dict(size=14),
-            showlegend=True,
-            height=350
-        )
-        fig.update_traces(textposition='inside', textinfo='percent+label')
         st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-       st.subheader("Churn Rate by Contract Type")
 
-       with col2:
-        st.subheader("Churn Rate by Contract Type")
+    with c2:
+        churn_contract = df.groupby("ContractType")["Churn"] \
+            .apply(lambda x:(x=="Yes").mean()*100).reset_index(name="ChurnRate")
+        fig = px.bar(churn_contract, x="ContractType", y="ChurnRate", text="ChurnRate")
+        fig.update_traces(texttemplate="%{text:.1f}%")
+        st.plotly_chart(fig, use_container_width=True)
 
-    contract_churn = (
-        df.assign(ChurnFlag=df['Churn'].map({'Yes': 1, 'No': 0}))
-          .groupby('ContractType')
-          .agg(churn_rate=('ChurnFlag', 'mean'))
-          .reset_index()
+elif page == "🔍 Detailed Analysis":
+    st.markdown("<p class='main-header'>Detailed Analysis</p>", unsafe_allow_html=True)
+
+    f_contract = st.multiselect("Contract", df["ContractType"].unique(), df["ContractType"].unique())
+    f_df = df[df["ContractType"].isin(f_contract)]
+
+    fig = px.scatter(
+        f_df, x="Tenure", y="MonthlyCharges",
+        color="Churn", opacity=0.6
     )
-
-    fig2 = px.bar(
-        contract_churn,
-        x='ContractType',
-        y='churn_rate',
-        text=contract_churn['churn_rate'].apply(lambda x: f"{x*100:.1f}%"),
-        color='ContractType'
-    )
-
-    fig2.update_layout(
-        yaxis_tickformat=".0%",
-        height=350,
-        showlegend=False
-    )
-
-    st.plotly_chart(fig2, use_container_width=True)
-
-
-    fig = px.bar(
-        contract_churn,
-        x='ContractType',
-        y='churn_rate',
-        text=contract_churn['churn_rate'].apply(lambda x: f"{x*100:.1f}%"),
-        color='ContractType',
-        color_discrete_sequence=['#E94F37', '#F4A261', '#2E86AB']
-    )
-
-    fig.update_layout(
-        yaxis_tickformat='.0%',
-        height=350,
-        showlegend=False
-    )
-
     st.plotly_chart(fig, use_container_width=True)
-           
+
+elif page == "💻 SQL Queries":
+    st.markdown("<p class='main-header'>SQL Queries</p>", unsafe_allow_html=True)
+    st.code("""
+SELECT ContractType,
+       ROUND(100.0 * SUM(CASE WHEN Churn='Yes' THEN 1 END)/COUNT(*),2) AS churn_rate
+FROM customers
+GROUP BY ContractType;
+""", language="sql")
+
+elif page == "💡 Insights & Recommendations":
+    st.markdown("<p class='main-header'>Insights & Recommendations</p>", unsafe_allow_html=True)
+    st.markdown("""
+- Month-to-month customers show highest churn
+- First 6 months are most critical
+- Electronic check users are high risk
+- Contract migration has highest ROI
+""")
+
+elif page == "📋 About This Project":
+    st.markdown("<p class='main-header'>About This Project</p>", unsafe_allow_html=True)
+    st.markdown("""
+This project demonstrates an end-to-end churn analysis using:
+- Python
+- Pandas & NumPy
+- Plotly
+- Streamlit
+""")
+
+st.markdown("---")
+st.markdown("© 2024 | Customer Churn Analysis Portfolio")
