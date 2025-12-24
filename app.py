@@ -1,3 +1,7 @@
+import os
+import sys
+os.system(f"{sys.executable} -m pip install plotly")
+
 import streamlit as st
 import pandas as pd
 import numpy as np
