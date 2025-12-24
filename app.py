@@ -245,12 +245,32 @@ if page == "📊 Executive Dashboard":
     with col2:
        st.subheader("Churn Rate by Contract Type")
 
+       with col2:
+        st.subheader("Churn Rate by Contract Type")
+
     contract_churn = (
         df.assign(ChurnFlag=df['Churn'].map({'Yes': 1, 'No': 0}))
           .groupby('ContractType')
           .agg(churn_rate=('ChurnFlag', 'mean'))
           .reset_index()
     )
+
+    fig2 = px.bar(
+        contract_churn,
+        x='ContractType',
+        y='churn_rate',
+        text=contract_churn['churn_rate'].apply(lambda x: f"{x*100:.1f}%"),
+        color='ContractType'
+    )
+
+    fig2.update_layout(
+        yaxis_tickformat=".0%",
+        height=350,
+        showlegend=False
+    )
+
+    st.plotly_chart(fig2, use_container_width=True)
+
 
     fig = px.bar(
         contract_churn,
