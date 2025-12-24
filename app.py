@@ -136,4 +136,4 @@ This project demonstrates an end-to-end churn analysis using:
 """)
 
 st.markdown("---")
-st.markdown("© 2024 | Customer Churn Analysis Portfolio")
+st.markdown("© 2025 | Customer Churn Analysis Portfolio")
